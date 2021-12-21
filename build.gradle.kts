@@ -1,8 +1,11 @@
 plugins {
-   java
+    java
+    signing
+    `maven-publish`
 }
 
-version "0.0.1-SNAPSHOT"
+group = "nz.cheyne.junit"
+version = "0.0.1-SNAPSHOT-1"
 
 repositories {
     mavenCentral()
@@ -23,7 +26,7 @@ tasks.withType<Test> {
 
     // Did not class-randomize with junit 5.7.0... it worked with 5.8.2
     testLogging {
-        events ("FAILED", "PASSED", "SKIPPED")
+        events("FAILED", "PASSED", "SKIPPED")
     }
 }
 
@@ -35,4 +38,48 @@ tasks.create<Test>("randomTests") {
     // Randomize the order that test classes are run.
     systemProperty("junit.jupiter.testclass.order.default", "org.junit.jupiter.api.ClassOrderer\$Random")
     include("**/Dummy**")
+}
+
+java {
+    withSourcesJar()
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("randomTestFilter") {
+            from(components["java"])
+            pom {
+                name.set("Random Test Filter")
+                description.set("A filter to run a randomized subset of JUnit tests.")
+                url.set("https://cheyne.nz/random-test-filter/")
+                licenses {
+                    license {
+                        name.set("MIT Licence")
+                        url.set("https://github.com/CheyneWilson/RandomTestFilter/blob/main/LICENSE")
+                    }
+                }
+                developers {
+                    developer {
+                        id.set("cheynewilson")
+                        name.set("Cheyne Wilson")
+                        email.set("dev+random-test-filter@cheyne.nz")
+                    }
+                }
+                scm {
+                    connection.set("scm:git:git://github.com/cheynewilson/random-test-filter.git")
+                    developerConnection.set("scm:git:ssh://github.com/cheynewilson/random-test-filter.git")
+                    url.set("https://github.com/cheynewilson/random-test-filter")
+                }
+            }
+        }
+    }
+}
+
+val signingKeyId: String? by project
+val signingKey: String? by project
+val signingPassword: String? by project
+
+signing {
+    useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+    sign(publishing.publications["randomTestFilter"])
 }

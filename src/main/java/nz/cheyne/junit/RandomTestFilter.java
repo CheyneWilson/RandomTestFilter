@@ -10,11 +10,11 @@ import java.util.Arrays;
 import java.util.Random;
 
 /**
- * This filter limits the number of tests run.
+ * The RandomTestFilter selects a random subset of tests to be executed.
  */
 public class RandomTestFilter implements PostDiscoveryFilter {
 
-    protected static Logger log = LoggerFactory.getLogger(RandomTestFilter.class);
+    private static final Logger log = LoggerFactory.getLogger(RandomTestFilter.class);
 
     // The maximum number of tests to run
     private final int testCountLimit;
@@ -30,7 +30,9 @@ public class RandomTestFilter implements PostDiscoveryFilter {
     private boolean[] includeTestMapping;
 
     /**
+     * Create a new filter to select a random subset of tests.
      *
+     * The number of tests is configured with the system property nz.cheyne.junit.test.limit.
      */
     public RandomTestFilter() {
         String limit = System.getProperty(TEST_COUNT_LIMIT_PROP);
@@ -45,6 +47,7 @@ public class RandomTestFilter implements PostDiscoveryFilter {
             isEnabled = true;
         }
     }
+
 
     @Override
     public FilterResult apply(TestDescriptor object) {

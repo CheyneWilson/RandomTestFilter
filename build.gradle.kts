@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "nz.cheyne.junit"
-version = "0.0.1-SNAPSHOT-1"
+version = "0.0.1"
 
 repositories {
     mavenCentral()
@@ -42,6 +42,7 @@ tasks.create<Test>("randomTests") {
 
 java {
     withSourcesJar()
+    withJavadocJar()
 }
 
 publishing {
@@ -63,6 +64,7 @@ publishing {
                         id.set("cheynewilson")
                         name.set("Cheyne Wilson")
                         email.set("dev+random-test-filter@cheyne.nz")
+                        url.set("https://cheyne.nz")
                     }
                 }
                 scm {

@@ -2,10 +2,16 @@ plugins {
     java
     signing
     `maven-publish`
+    id("fr.brouillard.oss.gradle.jgitver") version "0.9.1"
 }
 
 group = "nz.cheyne.junit"
-version = "0.0.1"
+
+jgitver {
+    useDirty = true
+    nonQualifierBranches = "main"
+}
+
 
 repositories {
     mavenCentral()
@@ -46,6 +52,12 @@ java {
 }
 
 publishing {
+    repositories {
+        maven {
+            setUrl("https://s01.oss.sonatype.org")
+        }
+    }
+
     publications {
         create<MavenPublication>("randomTestFilter") {
             from(components["java"])

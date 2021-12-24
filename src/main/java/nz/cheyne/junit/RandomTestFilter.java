@@ -17,35 +17,57 @@ public class RandomTestFilter implements PostDiscoveryFilter {
     private static final Logger log = LoggerFactory.getLogger(RandomTestFilter.class);
 
     // The maximum number of tests to run
-    private final int testCountLimit;
+    private static final int testCountLimit;
 
     // The filter is only enabled if the limit is set
-    private final boolean isEnabled;
+    private static final boolean isEnabled;
 
     // This integer system property is equal to the number of tests to run (the limit).
-    private final String TEST_COUNT_LIMIT_PROP = "nz.cheyne.junit.test.limit";
+    private final static String TEST_COUNT_LIMIT_PROP = "nz.cheyne.junit.test.limit";
 
-    // The number of tests included
-    private int testIndex = 0;
-    private boolean[] includeTestMapping;
+    private static final long SEED;
+    private static final Random rand;
 
-    /**
-     * Create a new filter to select a random subset of tests.
-     *
-     * The number of tests is configured with the system property nz.cheyne.junit.test.limit.
-     */
-    public RandomTestFilter() {
+    static {
         String limit = System.getProperty(TEST_COUNT_LIMIT_PROP);
         if (limit == null) {
             log.debug("RandomTestFilter is not active. Defaulting to all tests.");
             log.debug("Set the system property {} to configure the filter limit.", TEST_COUNT_LIMIT_PROP);
-            testCountLimit = Integer.MAX_VALUE;
             isEnabled = false;
+
+            // These values are not used because filter is not enabled, default them.
+            testCountLimit = Integer.MAX_VALUE;
+            SEED = new Random().nextLong();
         } else {
             log.debug("RandomTestFilter is active.");
-            testCountLimit = Integer.parseInt(limit);
             isEnabled = true;
+            testCountLimit = Integer.parseInt(limit);
+
+            String seedStr = System.getProperty("junit.jupiter.execution.order.random.seed");
+            if (seedStr == null) {
+                SEED = new Random().nextLong();
+                log.info("No seed set for RandomTestFilter. Defaulting to {}.", SEED);
+            } else {
+                SEED = Long.parseLong(seedStr);
+                log.info("RandomTestFilter seed is '{}' (junit.jupiter.execution.order.random.seed).", SEED);
+            }
         }
+        rand = new Random(SEED);
+    }
+
+    // This index tracks the number of tests included as the filter is applied
+    private int testIndex = 0;
+
+    // This mapping is used to decide whether a test is included or not in a test execution
+    private boolean[] includeTestMapping;
+
+    /**
+     * Create a new filter to select a random subset of tests.
+     * <p>
+     * The number of tests is configured with the system property 'nz.cheyne.junit.test.limit'.
+     * The random seed is configured with the system property 'junit.jupiter.execution.order.random.seed'.
+     */
+    public RandomTestFilter() {
     }
 
 
@@ -119,7 +141,6 @@ public class RandomTestFilter implements PostDiscoveryFilter {
             Arrays.fill(includeMapping, testCountLimit, includeMapping.length, false);
 
             // Shuffle
-            Random rand = new Random();
             for (int i = 0; i < includeMapping.length; i++) {
                 int randomIndexToSwap = rand.nextInt(includeMapping.length);
                 boolean temp = includeMapping[randomIndexToSwap];

@@ -19,8 +19,10 @@ repositories {
 
 dependencies {
     implementation("org.junit.platform:junit-platform-launcher:1.8.2")
+
+    implementation("org.slf4j:jul-to-slf4j:1.7.32")
     implementation("org.slf4j:slf4j-api:1.7.32")
-    testImplementation("ch.qos.logback:logback-classic:1.2.9")
+    implementation("ch.qos.logback:logback-classic:1.2.9")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.2")
@@ -36,14 +38,29 @@ tasks.withType<Test> {
     }
 }
 
-tasks.create<Test>("randomTests") {
+
+
+tasks.create<Test>("randomTest") {
     group = "verification"
     systemProperty("nz.cheyne.junit.test.limit", 2)
-    // Randomize the order that individual tests are run
-    systemProperty("junit.jupiter.testmethod.order.default", "org.junit.jupiter.api.MethodOrderer\$Random")
+
+    // Set the random seed for JUnit and the RandomTestFilter.
+    val seed: String = System.getProperty("junit.jupiter.execution.order.random.seed") ?: kotlin.random.Random.nextLong().toString()
+    systemProperty("junit.jupiter.execution.order.random.seed", seed)
     // Randomize the order that test classes are run.
     systemProperty("junit.jupiter.testclass.order.default", "org.junit.jupiter.api.ClassOrderer\$Random")
+    // Randomize the order that individual tests within a class are run
+    systemProperty("junit.jupiter.testmethod.order.default", "org.junit.jupiter.api.MethodOrderer\$Random")
+
+    // Log the seeds. Note, this is disabled because we also log the same seed in the filter.
+    // systemProperty("java.util.logging.config.file", file("src/test/resources/logging.properties"))
+
     include("**/Dummy**")
+
+    // As convenience, we can set and log the seed in the task.
+    doFirst {
+        logger.quiet("junit.jupiter.execution.order.random.seed is {}", seed)
+    }
 }
 
 java {
@@ -51,10 +68,17 @@ java {
     withJavadocJar()
 }
 
+val ossrhPassword: String? by project
+val ossrhUsername: String? by project
+
 publishing {
     repositories {
         maven {
             setUrl("https://s01.oss.sonatype.org")
+            credentials {
+                username = ossrhUsername
+                password = ossrhPassword
+            }
         }
     }
 

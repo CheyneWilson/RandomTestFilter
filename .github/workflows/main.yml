@@ -67,4 +67,4 @@ jobs:
           PGP_SIGNING_PASSWORD: ${{ secrets.PGP_SIGNING_PASSWORD }}
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-        run: ./gradlew -PossrhUsername=OSSRH_USERNAME -PossrhPassword="OSSRH_PASSWORD"  publishAllPublicationsToMavenCentralRepository
+        run: ./gradlew -PossrhUsername=$OSSRH_USERNAME -PossrhPassword="$OSSRH_PASSWORD" -PsigningPassword=$PGP_SIGNING_PASSWORD -PsigningKeyId=$PGP_SIGNING_KEY_ID -PsigningKey="$PGP_SIGNING_KEY" publishAllPublicationsToMavenCentralRepository

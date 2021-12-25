@@ -74,8 +74,17 @@ val ossrhUsername: String? by project
 publishing {
     repositories {
         maven {
+            name = "Snapshot"
+            setUrl("https://s01.oss.sonatype.org/content/repositories/snapshots")
+            credentials {
+                username = ossrhUsername
+                password = ossrhPassword
+            }
+        }
+
+        maven {
             name = "MavenCentral"
-            setUrl("https://s01.oss.sonatype.org")
+            setUrl("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
             credentials {
                 username = ossrhUsername
                 password = ossrhPassword

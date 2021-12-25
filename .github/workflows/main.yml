@@ -59,3 +59,9 @@ jobs:
         uses: actions/upload-artifact@v2.2.4
         with:
           path: build/libs
+
+      - name: Publish
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+        run: ./gradlew -PossrhUsername=OSSRH_USERNAME -PossrhPassword="OSSRH_PASSWORD"  publishAllPublicationsToMavenCentralRepository

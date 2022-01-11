@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The RandomTestFilter selects a random subset of tests to be executed.
@@ -56,7 +57,7 @@ public class RandomTestFilter implements PostDiscoveryFilter {
     }
 
     // This index tracks the number of tests included as the filter is applied
-    private int testIndex = 0;
+    private final ConcurrentHashMap<UniqueId, Integer> testIndexes = new ConcurrentHashMap<>();
 
     // This mapping is used to decide whether a test is included or not in a test execution
     private final Map<UniqueId, boolean[]> includeTestMapping = new HashMap<>();
@@ -93,6 +94,7 @@ public class RandomTestFilter implements PostDiscoveryFilter {
             UniqueId id = object.getUniqueId();
             boolean[] mapping = generateTestIncludeMapping(testCountLimit, totalTestCount);
             includeTestMapping.put(id, mapping);
+            testIndexes.put(id, 0);
         }
 
         // We have assumed container the container root was processed first. Based on the JUnit 5 implementation, while
@@ -101,14 +103,16 @@ public class RandomTestFilter implements PostDiscoveryFilter {
         if (object.isTest()) {
             UniqueId rootKey = findRoot(object);
             boolean[] mapping = includeTestMapping.get(rootKey);
+            //noinspection ConstantConditions
+            int index = testIndexes.computeIfPresent(rootKey, (k, v) -> v + 1) - 1;
 
             FilterResult result;
-            if (mapping[testIndex]) {
+            if (mapping[index]) {
                 result = FilterResult.included(null);
             } else {
                 result = FilterResult.excluded("Maximum number of tests reached.");
             }
-            testIndex += 1;
+
             return result;
         } else {
             return FilterResult.included(null);
@@ -123,6 +127,7 @@ public class RandomTestFilter implements PostDiscoveryFilter {
      */
     private UniqueId findRoot(TestDescriptor object) {
         Optional<TestDescriptor> parent = object.getParent();
+        //noinspection OptionalGetWithoutIsPresent. This should only blow up of a TestRoot was passed in.
         TestDescriptor root = parent.get();
         while(true) {
             if (parent.isPresent()){

@@ -2,12 +2,12 @@ package nz.cheyne.junit;
 
 import org.junit.platform.engine.FilterResult;
 import org.junit.platform.engine.TestDescriptor;
+import org.junit.platform.engine.UniqueId;
 import org.junit.platform.launcher.PostDiscoveryFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.Random;
+import java.util.*;
 
 /**
  * The RandomTestFilter selects a random subset of tests to be executed.
@@ -59,7 +59,7 @@ public class RandomTestFilter implements PostDiscoveryFilter {
     private int testIndex = 0;
 
     // This mapping is used to decide whether a test is included or not in a test execution
-    private boolean[] includeTestMapping;
+    private final Map<UniqueId, boolean[]> includeTestMapping = new HashMap<>();
 
     /**
      * Create a new filter to select a random subset of tests.
@@ -81,7 +81,8 @@ public class RandomTestFilter implements PostDiscoveryFilter {
         // Count the number of total number of tests and generate a mapping that is later used to filter tests at random.
         if (object.isRoot()) {
             long count = object.getDescendants()
-                    .stream().filter(TestDescriptor::isTest)
+                    .stream()
+                    .filter(TestDescriptor::isTest)
                     .count();
 
             log.info("Total test count is: {}.", count);
@@ -89,15 +90,20 @@ public class RandomTestFilter implements PostDiscoveryFilter {
 
             // Limited to 2 million total tests with current impl
             int totalTestCount = Math.toIntExact(count);
-            includeTestMapping = generateTestIncludeMapping(testCountLimit, totalTestCount);
+            UniqueId id = object.getUniqueId();
+            boolean[] mapping = generateTestIncludeMapping(testCountLimit, totalTestCount);
+            includeTestMapping.put(id, mapping);
         }
 
         // We have assumed container the container root was processed first. Based on the JUnit 5 implementation, while
         // there is no guarantee, this assumption should hold. If this assumption ever breaks, includeTestMapping would
         // not be set at this point and a different implementation required.
         if (object.isTest()) {
+            UniqueId rootKey = findRoot(object);
+            boolean[] mapping = includeTestMapping.get(rootKey);
+
             FilterResult result;
-            if (includeTestMapping[testIndex]) {
+            if (mapping[testIndex]) {
                 result = FilterResult.included(null);
             } else {
                 result = FilterResult.excluded("Maximum number of tests reached.");
@@ -107,6 +113,26 @@ public class RandomTestFilter implements PostDiscoveryFilter {
         } else {
             return FilterResult.included(null);
         }
+    }
+
+    /**
+     * There can be multiple roots, e.g. when JUnit 4 and 5 are both present in a project.
+     *
+     * @param object A TestDescriptor representing a Test Container or Test
+     * @return The UniqueId of the root
+     */
+    private UniqueId findRoot(TestDescriptor object) {
+        Optional<TestDescriptor> parent = object.getParent();
+        TestDescriptor root = parent.get();
+        while(true) {
+            if (parent.isPresent()){
+                root = parent.get();
+                parent = root.getParent();
+            } else {
+                break;
+            }
+        }
+        return root.getUniqueId();
     }
 
     /**

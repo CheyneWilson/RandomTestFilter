@@ -14,13 +14,11 @@ repositories {
 }
 
 dependencies {
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
-    testImplementation("nz.cheyne.junit.RandomTestFilter")
-    
+    testRuntimeOnly("nz.cheyne.junit.RandomTestFilter")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.2")
 }
 ```
-2. To register the filter create the file `org.junit.platform.launcher.PostDiscoveryFilter` with the following contents:
+2. To register the filter create the resources file `META-INF/services/org.junit.platform.launcher.PostDiscoveryFilter` with the following contents:
 ```
 nz.cheyne.junit.RandomTestFilter
 ```
@@ -29,14 +27,16 @@ the filter will be active. An example of how this may be configured this in a `b
 ```kotlin
 tasks.create<Test>("randomTest") {
     group = "verification"
-    val limit: String = System.getProperty("nz.cheyne.junit.test.limit") ?: 2
+
+    // Limit the number of tests executed to 2
+    val limit: String = System.getProperty("test.limit") ?: "2"
     systemProperty("nz.cheyne.junit.test.limit", limit)
     include("**/Dummy**")
 }
 ```
 With the above configuration, the property can be overridden on the commandline, e.g. 
 
-```./gradlew -Dnz.cheyne.junit.test.limit=3 randomTest ```
+```./gradlew -Dtest.limit=3 randomTest ```
 
 ## Advanced usage
 
@@ -50,8 +50,7 @@ An example is shown below:
 tasks.create<Test>("randomTest") {
     group = "verification"
     
-    // Limit the number of tests executed to 2
-    val limit: String = System.getProperty("nz.cheyne.junit.test.limit") ?: 2
+    val limit: String = System.getProperty("test.limit")
     systemProperty("nz.cheyne.junit.test.limit", limit)
 
     // Set the random seed for JUnit and the RandomTestFilter. 
